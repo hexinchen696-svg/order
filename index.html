@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>点餐工具</title>
+
+<style>
+body { margin:0; font-family:Arial; background:#f5f5f5; }
+
+.header {
+  background:#ff6600;
+  color:#fff;
+  padding:15px;
+  text-align:center;
+  font-size:18px;
+}
+
+.container { padding:10px; }
+
+.addBox {
+  background:#fff;
+  padding:10px;
+  border-radius:10px;
+  margin-bottom:10px;
+}
+
+input {
+  width:100%;
+  padding:8px;
+  margin:5px 0;
+}
+
+button {
+  padding:6px 10px;
+  margin-top:5px;
+}
+
+.dish {
+  display:flex;
+  background:#fff;
+  margin-bottom:10px;
+  padding:10px;
+  border-radius:10px;
+}
+
+.dish img {
+  width:80px;
+  height:80px;
+  object-fit:cover;
+  border-radius:8px;
+}
+
+.info {
+  flex:1;
+  margin-left:10px;
+}
+
+.controls button {
+  width:28px;
+  height:28px;
+  border:none;
+  background:#ff6600;
+  color:#fff;
+  border-radius:50%;
+}
+
+.cart {
+  position:fixed;
+  bottom:0;
+  width:100%;
+  background:#fff;
+  border-top:1px solid #ddd;
+  padding:10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.pay {
+  background:#ff6600;
+  color:#fff;
+  border:none;
+  padding:10px 15px;
+  border-radius:20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">🍱 点餐系统</div>
+
+<div class="container">
+
+<div class="addBox">
+<h3>➕ 添加菜品</h3>
+<input id="name" placeholder="菜名">
+<input id="price" placeholder="价格">
+<input type="file" id="img">
+<button onclick="addDish()">添加</button>
+</div>
+
+<div id="menu"></div>
+
+</div>
+
+<div class="cart">
+<div>🛒 <span id="count">0</span> 件 | ￥<span id="total">0</span></div>
+<button class="pay" onclick="checkout()">结算</button>
+</div>
+
+<script>
+let dishes = [];
+let cart = {};
+
+// 添加菜
+function addDish(){
+  let name = document.getElementById("name").value;
+  let price = document.getElementById("price").value;
+  let file = document.getElementById("img").files[0];
+
+  if(!name || !price) return alert("请填写完整");
+
+  let reader = new FileReader();
+
+  reader.onload = function(e){
+    dishes.push({
+      name,
+      price: parseFloat(price),
+      img: e.target.result
+    });
+    render();
+  };
+
+  if(file) reader.readAsDataURL(file);
+  else {
+    dishes.push({name, price:parseFloat(price), img:""});
+    render();
+  }
+
+  document.getElementById("name").value="";
+  document.getElementById("price").value="";
+  document.getElementById("img").value="";
+}
+
+// 渲染
+function render(){
+  let html="";
+  dishes.forEach(d=>{
+    let count = cart[d.name]?.count || 0;
+
+    html+=`
+    <div class="dish">
+      <img src="${d.img||'https://via.placeholder.com/80'}">
+      <div class="info">
+        <h4>${d.name}</h4>
+        <p>￥${d.price}</p>
+
+        <div class="controls">
+          <button onclick="change('${d.name}',${d.price},-1)">-</button>
+          <span>${count}</span>
+          <button onclick="change('${d.name}',${d.price},1)">+</button>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById("menu").innerHTML = html;
+}
+
+// 加减
+function change(name,price,num){
+  if(!cart[name]) cart[name]={count:0,price};
+  cart[name].count+=num;
+  if(cart[name].count<=0) delete cart[name];
+  update();
+  render();
+}
+
+// 统计
+function update(){
+  let c=0,t=0;
+  for(let k in cart){
+    c+=cart[k].count;
+    t+=cart[k].count*cart[k].price;
+  }
+  document.getElementById("count").innerText=c;
+  document.getElementById("total").innerText=t;
+}
+
+// 结算
+function checkout(){
+  if(Object.keys(cart).length===0){
+    alert("还没点菜");
+    return;
+  }
+
+  let msg="点餐结果：\n";
+  for(let k in cart){
+    msg+=k+" x"+cart[k].count+"\n";
+  }
+
+  alert(msg);
+
+  cart={};
+  update();
+  render();
+}
+</script>
+
+</body>
+</html>
